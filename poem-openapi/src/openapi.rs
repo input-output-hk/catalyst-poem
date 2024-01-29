@@ -176,6 +176,7 @@ pub struct ExtraHeader {
     name: String,
     description: Option<String>,
     deprecated: bool,
+    required: Option<bool>,
 }
 
 impl<T: AsRef<str>> From<T> for ExtraHeader {
@@ -191,6 +192,7 @@ impl ExtraHeader {
             name: name.as_ref().to_uppercase(),
             description: None,
             deprecated: false,
+            required: Some(true),
         }
     }
 
@@ -207,6 +209,14 @@ impl ExtraHeader {
     pub fn deprecated(self) -> Self {
         Self {
             deprecated: true,
+            ..self
+        }
+    }
+
+    /// Set the required of extra header.
+    pub fn required(self, required: bool) -> Self {
+        Self {
+            required: Some(required),
             ..self
         }
     }
@@ -547,7 +557,11 @@ impl<T, W> OpenApiService<T, W> {
                     MetaHeader {
                         name: header.name.clone(),
                         description: header.description.clone(),
-                        required: *is_required,
+                        required: if let Some(required) = header.required {
+                            required
+                        } else {
+                            *is_required
+                        },
                         deprecated: header.deprecated,
                         schema: schema_ref.clone(),
                     },
@@ -666,7 +680,8 @@ mod tests {
         let api_service = OpenApiService::new(Api, "demo", "1.0")
             .extra_response_header::<i32, _>("a1")
             .extra_response_header::<String, _>(ExtraHeader::new("A2").description("abc"))
-            .extra_response_header::<f32, _>(ExtraHeader::new("A3").deprecated());
+            .extra_response_header::<f32, _>(ExtraHeader::new("A3").deprecated())
+            .extra_response_header::<f32, _>(ExtraHeader::new("A4").required(false));
         let doc = api_service.document();
         let headers = &doc.apis[0].paths[0].operations[0].responses.responses[0].headers;
 
@@ -684,6 +699,12 @@ mod tests {
         assert_eq!(headers[2].description, None);
         assert!(headers[2].deprecated);
         assert_eq!(headers[2].schema, f32::schema_ref());
+
+        assert_eq!(headers[3].name, "A4");
+        assert_eq!(headers[3].description, None);
+        assert!(!headers[3].deprecated);
+        assert_eq!(headers[3].schema, f32::schema_ref());
+        assert_eq!(headers[3].required, false);
     }
 
     #[test]

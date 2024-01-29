@@ -236,6 +236,8 @@ pub(crate) struct ExtraHeader {
     pub(crate) description: Option<String>,
     #[darling(default)]
     pub(crate) deprecated: bool,
+    #[darling(default)]
+    pub(crate) required: bool,
 }
 
 #[derive(FromMeta)]

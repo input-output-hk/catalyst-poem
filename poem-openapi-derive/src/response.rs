@@ -122,12 +122,13 @@ pub(crate) fn generate(args: DeriveInput) -> GeneratorResult<TokenStream> {
                 Err(_) => return Err(Error::new(header.ty.span(), "Invalid type").into()),
             };
             let deprecated = header.deprecated;
-
+            let required = header.required;
+            
             meta_headers.push(quote! {
                 #crate_name::registry::MetaHeader {
                     name: ::std::string::ToString::to_string(#name),
                     description: #description,
-                    required: <#ty as #crate_name::types::Type>::IS_REQUIRED,
+                    required: #required,
                     deprecated: #deprecated,
                     schema: <#ty as #crate_name::types::Type>::schema_ref(),
                 }
